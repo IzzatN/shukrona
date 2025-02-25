@@ -26,7 +26,7 @@ try {
         return $_SERVER['REMOTE_ADDR'];
     }
 
-    if (preg_match('/^(127\.|192\.168\.)/', getRemoteIPAddress())) {
+    if (preg_match('/^(127\.|192\.168\.|::1)/', getRemoteIPAddress())) {
         die('MF002');
     }
 
@@ -65,13 +65,14 @@ try {
             $template);
     }
 
-    preg_match("/(<!-- #\{BeginInfo\} -->)(.|\s)*?(<!-- #\{EndInfo\} -->)/", $template, $tmp, PREG_OFFSET_CAPTURE);
+    // In a regular expression, the character \v is used as "anything", since this character is rare
+    preg_match("/(<!-- #\{BeginInfo\} -->)([^\v]*?)(<!-- #\{EndInfo\} -->)/", $template, $matches, PREG_OFFSET_CAPTURE);
     foreach ($_POST as $key => $value) {
         if ($key != "counter" && $key != "email" && $key != "message" && $key != "form-type" && $key != "g-recaptcha-response" && !empty($value)){
             $info = str_replace(
                 array("<!-- #{BeginInfo} -->", "<!-- #{InfoState} -->", "<!-- #{InfoDescription} -->"),
                 array("", ucfirst($key) . ':', $value),
-                $tmp[0][0]);
+                $matches[0][0]);
 
             $template = str_replace("<!-- #{EndInfo} -->", $info, $template);
         }
@@ -114,7 +115,7 @@ try {
         $mail->Password = $formConfig['password'];
     }
 
-    $mail->From = $addresses[0][0][0];
+    $mail->From = $_POST['email'];
 
     # Attach file
     if (isset($_FILES['file']) &&
